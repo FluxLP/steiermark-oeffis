@@ -84,6 +84,7 @@ The integration creates 7 sensors (`sensor.transit_departure_1` through `sensor.
 - Minutes until departure
 
 ### Attributes
+- `station`: Name of the station (Station Departures mode)
 - `line`: Transit line number
 - `destination`: Direction/destination
 - `departure_time`: Time in HH:MM format

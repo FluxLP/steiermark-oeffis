@@ -31,6 +31,7 @@ from .const import (
     CONF_DEST_LON,
     CONF_STOP_POINT_REF,
     CONF_LINES,
+    CONF_STATION_NAME,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -476,6 +477,7 @@ class TransitDepartureSensor(CoordinatorEntity, SensorEntity):
         if self.coordinator.data and len(self.coordinator.data) > self._index:
             departure = self.coordinator.data[self._index]
             return {
+                "station": self.coordinator.config_data.get(CONF_STATION_NAME, ''),
                 "line": departure.get('line', 'Unknown'),
                 "destination": departure.get('destination', 'Unknown'),
                 "departure_time": departure.get('time', ''),
