@@ -1,3 +1,5 @@
+<img src="custom_components/steirische_linien/brand/logo@2x.png" alt="Steiermark Öffis Logo" width="160" align="right">
+
 # Steiermark Öffis - Home Assistant Integration
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
@@ -6,7 +8,7 @@ A Home Assistant custom integration for real-time public transit departure infor
 
 This is a fork of [PH_Steiermark_Oeffi](https://github.com/gregor-autischer/PH_Steiermark_Oeffi) by Gregor Autischer, extended with a line filter for station departures.
 
-**Looking for the dashboard card?** Check out the original [Powerhaus Steiermark Öffi Card](https://github.com/gregor-autischer/PH_Steiermark_Oeffi_Card) repository for a beautiful Lovelace card to display your transit departures.
+**Looking for the dashboard card?** Check out the [Steiermark Öffi Card](https://github.com/FluxLP/steiermark-oeffis-card) repository for a Lovelace card to display your transit departures, including colors per station when you combine several stations in one card.
 
 > **Important when using multiple stations:** If you have set up more than one device (e.g. several stations), each one creates its own 7 sensors, and Home Assistant adds a suffix to their entity IDs (e.g. `sensor.transit_departure_1_2`). You must change the sensors in the card configuration to the ones of the station you want to show. You can easily look up the correct entity IDs under **Developer Tools → States** (search for `transit_departure`).
 
