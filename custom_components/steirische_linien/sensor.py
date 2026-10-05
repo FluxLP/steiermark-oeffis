@@ -30,6 +30,7 @@ from .const import (
     CONF_DEST_LAT,
     CONF_DEST_LON,
     CONF_STOP_POINT_REF,
+    CONF_LINES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ async def async_setup_entry(
     coordinator = SteirischeLinienDataUpdateCoordinator(
         hass,
         config_entry.data,
+        config_entry.options.get(CONF_LINES, []),
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -70,14 +72,17 @@ class SteirischeLinienDataUpdateCoordinator(DataUpdateCoordinator):
         self,
         hass: HomeAssistant,
         config_data: dict,
+        lines: list[str] | None = None,
     ) -> None:
         """Initialize."""
         self.config_data = config_data
+        # Only show these lines; empty means all lines
+        self.lines = {line.strip().casefold() for line in (lines or []) if line.strip()}
         self.hass = hass
         super().__init__(
             hass,
             _LOGGER,
-            name="Powerhaus - Steirische Öffis",
+            name="Steiermark Öffis",
             update_interval=SCAN_INTERVAL,
         )
 
@@ -97,7 +102,9 @@ class SteirischeLinienDataUpdateCoordinator(DataUpdateCoordinator):
         # Determine which XML request to create based on mode
         if mode == MODE_STATION:
             stop_point_ref = self.config_data.get(CONF_STOP_POINT_REF)
-            xml_request = self._create_stop_event_request_xml(stop_point_ref)
+            # Request more departures when filtering so enough remain after the filter
+            number_of_results = 100 if self.lines else 20
+            xml_request = self._create_stop_event_request_xml(stop_point_ref, number_of_results)
         else:
             # Trip mode (default/legacy)
             origin_lat = self.config_data.get(CONF_ORIGIN_LAT)
@@ -289,7 +296,7 @@ class SteirischeLinienDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.error(f"Error parsing response: {e}")
             return []
 
-    def _create_stop_event_request_xml(self, stop_point_ref: str) -> str:
+    def _create_stop_event_request_xml(self, stop_point_ref: str, number_of_results: int = 20) -> str:
         """Create TRIAS XML request for station departures."""
         now = datetime.now(timezone.utc).isoformat()
 
@@ -307,7 +314,7 @@ class SteirischeLinienDataUpdateCoordinator(DataUpdateCoordinator):
           <DepArrTime>{now}</DepArrTime>
         </Location>
         <Params>
-          <NumberOfResults>20</NumberOfResults>
+          <NumberOfResults>{number_of_results}</NumberOfResults>
           <StopEventType>departure</StopEventType>
           <IncludePreviousCalls>false</IncludePreviousCalls>
           <IncludeOnwardCalls>false</IncludeOnwardCalls>
@@ -341,6 +348,9 @@ class SteirischeLinienDataUpdateCoordinator(DataUpdateCoordinator):
                     line_name = event.find('.//trias:PublishedLineName/trias:Text', namespaces)
                     if line_name is not None:
                         departure_info['line'] = line_name.text
+
+                    if self.lines and (departure_info.get('line') or '').strip().casefold() not in self.lines:
+                        continue
 
                     # Extract destination
                     destination_text = event.find('.//trias:DestinationText/trias:Text', namespaces)

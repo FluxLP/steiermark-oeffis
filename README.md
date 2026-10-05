@@ -1,10 +1,12 @@
-# Powerhaus - Steirische Öffis - Home Assistant Integration
+# Steiermark Öffis - Home Assistant Integration
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
 A Home Assistant custom integration for real-time public transit departure information for Public Transit in Styria, Austria (Steiermark, Österreich).
 
-**Looking for the dashboard card?** Check out the [Powerhaus Steiermark Öffi Card](https://github.com/gregor-autischer/PH_Steiermark_Oeffi_Card) repository for a beautiful Lovelace card to display your transit departures.
+This is a fork of [PH_Steiermark_Oeffi](https://github.com/gregor-autischer/PH_Steiermark_Oeffi) by Gregor Autischer, extended with a line filter for station departures.
+
+**Looking for the dashboard card?** Check out the original [Powerhaus Steiermark Öffi Card](https://github.com/gregor-autischer/PH_Steiermark_Oeffi_Card) repository for a beautiful Lovelace card to display your transit departures.
 
 ## Features
 
@@ -16,6 +18,7 @@ A Home Assistant custom integration for real-time public transit departure infor
   - **Trip Planning Mode**: Monitor connections between two locations using coordinates
   - **Station Departures Mode**: Monitor all departures from a single station by name
 - 🔍 Automatic station search with interactive selection
+- 🚋 Optional line filter in Station Departures mode (only show the lines you need)
 
 ## Installation
 
@@ -26,11 +29,11 @@ A installation tutorial is available on YouTube (Video in German!): https://yout
 1. Ensure [HACS](https://hacs.xyz/) is installed
 2. Add this repository as a custom repository:
    - HACS → Integrations → Menu → Custom repositories
-   - Repository: `https://github.com/gregor-autischer/PH_Steiermark_Oeffi`
+   - Repository: `https://github.com/FluxLP/steiermark-oeffis`
    - Category: `Integration`
 3. Click "Install"
 4. Restart Home Assistant
-5. Add integration via UI (Settings → Devices & Services → Add Integration → Search "Powerhaus - Steirische Öffis")
+5. Add integration via UI (Settings → Devices & Services → Add Integration → Search "Steiermark Öffis")
 
 ### Option 2: Manual Installation
 
@@ -63,6 +66,9 @@ The integration will automatically:
 1. Search for matching stations via the TRIAS API
 2. Present you with a list of found stations
 3. Let you select the exact station you want to monitor
+4. Let you choose which lines to show (e.g. only tram 4 and 5 at a busy stop like Jakominiplatz). Leave the selection empty to show all lines. Lines not currently departing can be typed in manually.
+
+You can change the selected lines later via **Settings → Devices & Services → Steiermark Öffis → Configure**.
 
 **Use case**: Monitor all departures from your local bus/tram stop or train station.
 

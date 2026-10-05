@@ -10,9 +10,14 @@ import aiohttp
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from . import DOMAIN
 from .const import (
@@ -26,6 +31,7 @@ from .const import (
     CONF_DEST_LON,
     CONF_STATION_NAME,
     CONF_STOP_POINT_REF,
+    CONF_LINES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -70,7 +76,7 @@ async def validate_trip_input(hass: HomeAssistant, data: dict[str, Any]) -> dict
     if not -180 <= data[CONF_DEST_LON] <= 180:
         raise ValueError("Invalid destination longitude")
 
-    return {"title": "Powerhaus - Steirische Öffis"}
+    return {"title": "Steiermark Öffis"}
 
 
 async def validate_station_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
@@ -83,7 +89,7 @@ async def validate_station_input(hass: HomeAssistant, data: dict[str, Any]) -> d
     if not data[CONF_STATION_NAME].strip():
         raise ValueError("Station name cannot be empty")
 
-    return {"title": "Powerhaus - Steirische Öffis"}
+    return {"title": "Steiermark Öffis"}
 
 
 async def search_stations(api_url: str, station_name: str) -> list[dict]:
@@ -174,6 +180,103 @@ def _parse_location_response(xml_text: str) -> list[dict]:
         return []
 
 
+async def fetch_station_lines(api_url: str, stop_point_ref: str) -> list[str]:
+    """Fetch the lines departing from a station using a TRIAS StopEventRequest."""
+    xml_request = _create_stop_event_request_xml(stop_point_ref)
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                api_url,
+                data=xml_request.encode('utf-8'),
+                headers={
+                    'User-Agent': 'HomeAssistant',
+                    'Content-Type': 'text/xml'
+                },
+                timeout=aiohttp.ClientTimeout(total=30)
+            ) as response:
+                if response.status != 200:
+                    _LOGGER.error(f"Line lookup failed with status {response.status}")
+                    return []
+
+                response_text = await response.text()
+                return _parse_lines_response(response_text)
+    except Exception as e:
+        _LOGGER.error(f"Error fetching lines: {e}")
+        return []
+
+
+def _create_stop_event_request_xml(stop_point_ref: str) -> str:
+    """Create XML request for many upcoming departures to discover the station's lines."""
+    now = datetime.now(timezone.utc).isoformat()
+
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<Trias xmlns="http://www.vdv.de/trias" version="1.2">
+  <ServiceRequest>
+    <siri:RequestTimestamp xmlns:siri="http://www.siri.org.uk/siri">{now}</siri:RequestTimestamp>
+    <siri:RequestorRef xmlns:siri="http://www.siri.org.uk/siri">homeassistant</siri:RequestorRef>
+    <RequestPayload>
+      <StopEventRequest>
+        <Location>
+          <LocationRef>
+            <StopPointRef>{stop_point_ref}</StopPointRef>
+          </LocationRef>
+          <DepArrTime>{now}</DepArrTime>
+        </Location>
+        <Params>
+          <NumberOfResults>200</NumberOfResults>
+          <StopEventType>departure</StopEventType>
+          <IncludePreviousCalls>false</IncludePreviousCalls>
+          <IncludeOnwardCalls>false</IncludeOnwardCalls>
+          <IncludeRealtimeData>false</IncludeRealtimeData>
+        </Params>
+      </StopEventRequest>
+    </RequestPayload>
+  </ServiceRequest>
+</Trias>"""
+
+
+def _parse_lines_response(xml_text: str) -> list[str]:
+    """Parse the distinct line names from a StopEventRequest response."""
+    try:
+        root = ET.fromstring(xml_text)
+        namespaces = {'trias': 'http://www.vdv.de/trias'}
+
+        lines = {
+            elem.text.strip()
+            for elem in root.findall('.//trias:StopEvent//trias:PublishedLineName/trias:Text', namespaces)
+            if elem.text and elem.text.strip()
+        }
+        return sort_lines(lines)
+    except Exception as e:
+        _LOGGER.error(f"Error parsing lines response: {e}")
+        return []
+
+
+def sort_lines(lines) -> list[str]:
+    """Sort line names naturally, e.g. 1, 4, 30, 64, N5, S1."""
+    def sort_key(line: str):
+        digits = ''.join(ch for ch in line if ch.isdigit())
+        number = int(digits) if digits else 0
+        return (not line[:1].isdigit(), ''.join(ch for ch in line if not ch.isdigit()), number, line)
+
+    return sorted(set(lines), key=sort_key)
+
+
+def _lines_schema(available_lines: list[str], selected: list[str]) -> vol.Schema:
+    """Build the multi-select schema for choosing lines."""
+    return vol.Schema({
+        vol.Optional(CONF_LINES, default=selected): SelectSelector(
+            SelectSelectorConfig(
+                options=sort_lines([*available_lines, *selected]),
+                multiple=True,
+                custom_value=True,
+                mode=SelectSelectorMode.DROPDOWN,
+            )
+        )
+    })
+
+
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Steirische Linien."""
 
@@ -185,6 +288,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._api_url = None
         self._station_name = None
         self._stations = []
+        self._selected_station = None
+        self._available_lines = []
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -289,18 +394,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
             if selected_station:
-                # Create the config entry with station mode data
-                config_data = {
-                    CONF_MODE: MODE_STATION,
-                    CONF_API_URL: self._api_url,
-                    CONF_STATION_NAME: selected_station['display_name'],
-                    CONF_STOP_POINT_REF: selected_station['stop_point_ref'],
-                }
-
-                return self.async_create_entry(
-                    title=f"Station: {selected_station['display_name']}",
-                    data=config_data
+                self._selected_station = selected_station
+                self._available_lines = await fetch_station_lines(
+                    self._api_url, selected_station['stop_point_ref']
                 )
+                return await self.async_step_select_lines()
 
         # Build the selection schema with found stations
         station_options = {
@@ -317,5 +415,76 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=select_station_schema,
             description_placeholders={
                 "count": str(len(self._stations))
+            }
+        )
+
+    async def async_step_select_lines(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Let the user choose which lines to show (empty = all lines)."""
+        if user_input is not None:
+            station = self._selected_station
+            config_data = {
+                CONF_MODE: MODE_STATION,
+                CONF_API_URL: self._api_url,
+                CONF_STATION_NAME: station['display_name'],
+                CONF_STOP_POINT_REF: station['stop_point_ref'],
+            }
+
+            return self.async_create_entry(
+                title=f"Station: {station['display_name']}",
+                data=config_data,
+                options={CONF_LINES: sort_lines(user_input.get(CONF_LINES, []))},
+            )
+
+        return self.async_show_form(
+            step_id="select_lines",
+            data_schema=_lines_schema(self._available_lines, []),
+            description_placeholders={
+                "station": self._selected_station['display_name'],
+                "count": str(len(self._available_lines)),
+            }
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> config_entries.OptionsFlow:
+        """Return the options flow handler."""
+        return OptionsFlowHandler(config_entry)
+
+
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle options (line filter) for an existing entry."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize the options flow."""
+        self._entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Change which lines are shown."""
+        if self._entry.data.get(CONF_MODE) != MODE_STATION:
+            return self.async_abort(reason="not_supported")
+
+        if user_input is not None:
+            return self.async_create_entry(
+                title="",
+                data={CONF_LINES: sort_lines(user_input.get(CONF_LINES, []))},
+            )
+
+        available_lines = await fetch_station_lines(
+            self._entry.data[CONF_API_URL], self._entry.data[CONF_STOP_POINT_REF]
+        )
+        selected = self._entry.options.get(CONF_LINES, [])
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=_lines_schema(available_lines, selected),
+            description_placeholders={
+                "station": self._entry.data.get(CONF_STATION_NAME, ""),
+                "count": str(len(available_lines)),
             }
         )

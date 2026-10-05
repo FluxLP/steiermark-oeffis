@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Configure Powerhaus - Steirische Öffis",
+        "title": "Configure Steiermark Öffis",
         "description": "Choose how you want to monitor transit information.",
         "data": {
           "mode": "Monitoring Mode"
@@ -33,6 +33,13 @@
         "data": {
           "station": "Station"
         }
+      },
+      "select_lines": {
+        "title": "Select Lines",
+        "description": "Found {count} line(s) departing from {station} in the near future. Select the lines you want to see, or leave empty to show all lines. You can also type a line that is not listed.",
+        "data": {
+          "lines": "Lines"
+        }
       }
     },
     "error": {
@@ -43,6 +50,20 @@
     },
     "abort": {
       "already_configured": "Device is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Select Lines",
+        "description": "Found {count} line(s) departing from {station} in the near future. Select the lines you want to see, or leave empty to show all lines. You can also type a line that is not listed.",
+        "data": {
+          "lines": "Lines"
+        }
+      }
+    },
+    "abort": {
+      "not_supported": "Line selection is only available in Station Departures mode."
     }
   }
 }

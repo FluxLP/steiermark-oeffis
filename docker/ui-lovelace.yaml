@@ -11,7 +11,7 @@ views:
           ## Setup Instructions:
           1. Go to **Settings** → **Devices & Services**
           2. Click **+ Add Integration**
-          3. Search for **Powerhaus - Steirische Öffis**
+          3. Search for **Steiermark Öffis**
           4. Follow the configuration wizard to set up your API and coordinates
           
           Once configured, the transit departure card below will show live data.

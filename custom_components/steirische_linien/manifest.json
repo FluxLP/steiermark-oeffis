@@ -1,13 +1,13 @@
 {
   "domain": "steirische_linien",
-  "name": "Powerhaus - Steirische Öffis",
-  "codeowners": ["@gregor-autischer"],
+  "name": "Steiermark Öffis",
+  "codeowners": ["@FluxLP"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/gregor-autischer/PH_Steiermark_Oeffi",
-  "issue_tracker": "https://github.com/gregor-autischer/PH_Steiermark_Oeffi/issues",
+  "documentation": "https://github.com/FluxLP/steiermark-oeffis",
+  "issue_tracker": "https://github.com/FluxLP/steiermark-oeffis/issues",
   "integration_type": "device",
   "iot_class": "cloud_polling",
   "requirements": [],
-  "version": "1.1.0"
+  "version": "1.2.0"
 }

@@ -1,0 +1,69 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Steiermark Öffis einrichten",
+        "description": "Wähle, wie du Öffi-Informationen anzeigen möchtest.",
+        "data": {
+          "mode": "Modus"
+        }
+      },
+      "trip": {
+        "title": "Verbindungssuche",
+        "description": "Gib die Koordinaten von Start und Ziel ein.",
+        "data": {
+          "api_url": "TRIAS API URL",
+          "origin_latitude": "Start Breitengrad",
+          "origin_longitude": "Start Längengrad",
+          "destination_latitude": "Ziel Breitengrad",
+          "destination_longitude": "Ziel Längengrad"
+        }
+      },
+      "station": {
+        "title": "Abfahrten einer Haltestelle",
+        "description": "Gib den Namen der Haltestelle ein, deren Abfahrten angezeigt werden sollen.",
+        "data": {
+          "api_url": "TRIAS API URL",
+          "station_name": "Haltestelle"
+        }
+      },
+      "select_station": {
+        "title": "Haltestelle auswählen",
+        "description": "{count} passende Haltestelle(n) gefunden. Bitte wähle die gewünschte Haltestelle.",
+        "data": {
+          "station": "Haltestelle"
+        }
+      },
+      "select_lines": {
+        "title": "Linien auswählen",
+        "description": "An der Haltestelle {station} fahren demnächst {count} Linie(n) ab. Wähle die Linien, die angezeigt werden sollen, oder lass das Feld leer, um alle Linien anzuzeigen. Nicht aufgelistete Linien kannst du auch selbst eintippen.",
+        "data": {
+          "lines": "Linien"
+        }
+      }
+    },
+    "error": {
+      "invalid_coordinates": "Ungültige Koordinaten",
+      "invalid_station": "Ungültiger Haltestellenname",
+      "no_stations_found": "Keine passende Haltestelle gefunden. Bitte versuche einen anderen Namen.",
+      "unknown": "Unerwarteter Fehler"
+    },
+    "abort": {
+      "already_configured": "Gerät ist bereits eingerichtet"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Linien auswählen",
+        "description": "An der Haltestelle {station} fahren demnächst {count} Linie(n) ab. Wähle die Linien, die angezeigt werden sollen, oder lass das Feld leer, um alle Linien anzuzeigen. Nicht aufgelistete Linien kannst du auch selbst eintippen.",
+        "data": {
+          "lines": "Linien"
+        }
+      }
+    },
+    "abort": {
+      "not_supported": "Die Linienauswahl ist nur im Modus „Abfahrten einer Haltestelle“ verfügbar."
+    }
+  }
+}

@@ -26,7 +26,7 @@ while [ $attempt -lt $max_attempts ]; do
         echo "2. Create a Home Assistant account (first time only)"
         echo "3. Go to Settings → Devices & Services"
         echo "4. Click '+ Add Integration'"
-        echo "5. Search for 'Powerhaus - Steirische Öffis'"
+        echo "5. Search for 'Steiermark Öffis'"
         echo "6. Configure with your API URL and coordinates"
         echo ""
         echo "📊 The dashboard card is already configured and will"
