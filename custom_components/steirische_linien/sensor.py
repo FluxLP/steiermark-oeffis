@@ -20,6 +20,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
+from .config_flow import sort_lines
 from .const import (
     MODE_TRIP,
     MODE_STATION,
@@ -79,6 +80,8 @@ class SteirischeLinienDataUpdateCoordinator(DataUpdateCoordinator):
         self.config_data = config_data
         # Only show these lines; empty means all lines
         self.lines = {line.strip().casefold() for line in (lines or []) if line.strip()}
+        # Lines offered to the dashboard card: the selected lines, or all lines seen so far
+        self.available_lines = {line.strip() for line in (lines or []) if line.strip()}
         self.hass = hass
         super().__init__(
             hass,
@@ -349,6 +352,8 @@ class SteirischeLinienDataUpdateCoordinator(DataUpdateCoordinator):
                     line_name = event.find('.//trias:PublishedLineName/trias:Text', namespaces)
                     if line_name is not None:
                         departure_info['line'] = line_name.text
+                        if not self.lines and line_name.text:
+                            self.available_lines.add(line_name.text.strip())
 
                     if self.lines and (departure_info.get('line') or '').strip().casefold() not in self.lines:
                         continue
@@ -478,6 +483,7 @@ class TransitDepartureSensor(CoordinatorEntity, SensorEntity):
             departure = self.coordinator.data[self._index]
             return {
                 "station": self.coordinator.config_data.get(CONF_STATION_NAME, ''),
+                "available_lines": sort_lines(self.coordinator.available_lines),
                 "line": departure.get('line', 'Unknown'),
                 "destination": departure.get('destination', 'Unknown'),
                 "departure_time": departure.get('time', ''),
