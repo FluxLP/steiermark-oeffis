@@ -479,11 +479,14 @@ class TransitDepartureSensor(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return the state attributes."""
+        # Station info is always present so the dashboard card can find the station
+        attributes = {
+            "station": self.coordinator.config_data.get(CONF_STATION_NAME, ''),
+            "available_lines": sort_lines(self.coordinator.available_lines),
+        }
         if self.coordinator.data and len(self.coordinator.data) > self._index:
             departure = self.coordinator.data[self._index]
-            return {
-                "station": self.coordinator.config_data.get(CONF_STATION_NAME, ''),
-                "available_lines": sort_lines(self.coordinator.available_lines),
+            attributes.update({
                 "line": departure.get('line', 'Unknown'),
                 "destination": departure.get('destination', 'Unknown'),
                 "departure_time": departure.get('time', ''),
@@ -491,8 +494,8 @@ class TransitDepartureSensor(CoordinatorEntity, SensorEntity):
                 "live_departure_time": departure.get('live_departure_time', ''),
                 "is_delayed": departure.get('is_delayed', False),
                 "is_scheduled": departure.get('is_scheduled', False),
-            }
-        return {}
+            })
+        return attributes
 
     @property
     def icon(self) -> str:

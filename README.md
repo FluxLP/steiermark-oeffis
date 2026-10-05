@@ -10,7 +10,7 @@ This is a fork of [PH_Steiermark_Oeffi](https://github.com/gregor-autischer/PH_S
 
 **Looking for the dashboard card?** Check out the [Steiermark Öffi Card](https://github.com/FluxLP/steiermark-oeffis-card) repository for a Lovelace card to display your transit departures, including colors per station when you combine several stations in one card.
 
-> **Important when using multiple stations:** If you have set up more than one device (e.g. several stations), each one creates its own 7 sensors, and Home Assistant adds a suffix to their entity IDs (e.g. `sensor.transit_departure_1_2`). You must change the sensors in the card configuration to the ones of the station you want to show. You can easily look up the correct entity IDs under **Developer Tools → States** (search for `transit_departure`).
+> **Multiple stations:** If you have set up several stations, just tick the stations you want in the card editor of the [Steiermark Öffi Card](https://github.com/FluxLP/steiermark-oeffis-card) — the card finds the right sensors automatically. If you configure sensors manually instead, note that Home Assistant adds a suffix to the entity IDs of further stations (e.g. `sensor.transit_departure_1_2`); look them up under **Developer Tools → States** (search for `transit_departure`).
 
 ## Features
 
